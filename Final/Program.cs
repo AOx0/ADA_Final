@@ -8,6 +8,9 @@ using static Final.Utils;
 
 namespace Final {
     internal static class Program {
+        
+        public static readonly string[] Unsearchable = {"PositionHistory", "AvgVelocityHistory"};
+        public static readonly string[] AlwaysSmall = {"AvgPos", "Podiums", "First", "Second", "Third"};
         public struct Runner {
             
             public readonly string Name;
@@ -125,7 +128,7 @@ namespace Final {
         private static void SubMenuSorting(Runner[] data)
         {
             var option = AskForOption((1, 4),
-                "\nMenu de opciones ordenamiento:\n"+
+                "\nMenu de opciones:\n"+
                 "    1. Ordenar por campo\n"+
                 "    2. Buscar por campo\n" +
                 "    3. Mostrar la tabla\n"+
@@ -160,16 +163,14 @@ namespace Final {
                     // And https://stackoverflow.com/questions/29978600/c-sharp-can-convert-from-c-sharp-type-to-system-type-but-not-vice-versa
                     campo = AskForFieldOrProperty<Runner>(
                         prompt:"Cuál es el campo por el que deseas filtrar los datos?: ",
-                        except: new []{"PositionHistory", "AvgVelocityHistory"}
+                        except: Unsearchable
                     );
                     
-                    FilterFieldProperty(data, campo, except: new []{"PositionHistory", "AvgVelocityHistory"},
-                        small: new []{"AvgPos", "Podiums", "First", "Second", "Third"});
+                    FilterFieldProperty(data, campo, except: Unsearchable,  small: AlwaysSmall);
 
                     break;
                 case 3:
-                    ShowData(data, except: new []{"PositionHistory", "AvgVelocityHistory"}, 
-                        small: new []{"AvgPos", "Podiums", "First", "Second", "Third"});
+                    ShowData(data, except: Unsearchable, small: AlwaysSmall);
                     break;
 
                 
@@ -209,10 +210,7 @@ namespace Final {
                         InputData(state);
                         break;
                     case 2:
-                        if (state.Runners != null)
-                        {
-                            SubMenuSorting(state.Runners);
-                        }
+                        if (state.Runners != null) SubMenuSorting(state.Runners);
                         else Console.WriteLine("ERROR: Debes ingresar registros para continuar (en la opción 1)");
                         break;
                 }

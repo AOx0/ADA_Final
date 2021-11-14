@@ -42,14 +42,14 @@ namespace Final {
             
         }
         
-        public static string AskForFieldOrProperty<T>(string prompt = "<dsad", string[] except = null) {
+        public static string AskForFieldOrProperty<T>(string prompt = "0000000000000000", string[] except = null) {
             var campos = GetAllFieldsAndProperties<T>(except);
             Console.Write("Campos disponibles: "); foreach (var c in campos) Console.Write(c + " ");  Console.Write("\n");
                 
             string campo;
                     
             while (true) {
-                campo = GetInput<string>(prompt != "<dsad" ? prompt : "¿Cuál es el campo que deseas?: ");
+                campo = GetInput<string>(prompt != "0000000000000000" ? prompt : "¿Cuál es el campo que deseas?: ");
                 if (campos.Contains(campo)) break;
                 Console.WriteLine("ERROR: El campo ingresado no es válido");
             }
