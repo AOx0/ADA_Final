@@ -54,6 +54,19 @@ namespace Final {
             return -1;
         }
         
+        public static int[] FindAllMatchingElementsIndex<T, TU>(T[] data, string campo, TU find,  Tuple<int, int> inRange = null ) {
+            var result = new List<int>();
+
+            for (int i=0; i<data.Length; i++) {
+                var tempResult = FindElementIndex(data, campo, find, new Tuple<int, int>(i, i+1));
+                Console.WriteLine(tempResult);
+                if ( tempResult != -1) result.Add(i);
+            }
+            
+            return result.ToArray();
+            
+        }
+        
         /// <summary>
         /// Function that asks for an input of type T, parses it and returns it.
         /// Made with https://stackoverflow.com/a/12911864/14916353
