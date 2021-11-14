@@ -1,12 +1,9 @@
 ﻿#define DEBUG
 
 using System;
-using System.Linq;
 using static Final.Utils;
 // ReSharper disable MemberCanBePrivate.Global
 
-// To force not found properties and fields to throw exceptions:
-// ReSharper disable PossibleNullReferenceException
 
 
 namespace Final {
@@ -124,22 +121,6 @@ namespace Final {
                 state.Runners[i] = new Runner(state.Runners, i,  state.NumberRaces, state.NumberRunners);
             }
         }
-
-
-        private static string AskForFieldOrProperty<T>(string prompt = "<dsad", string[] except = null) {
-            var campos = GetAllFieldsAndProperties<T>(except);
-            Console.Write("Campos disponibles: "); foreach (var c in campos) Console.Write(c + " ");  Console.Write("\n");
-                
-            string campo;
-                    
-            while (true) {
-                campo = GetInput<string>(prompt != "<dsad" ? prompt : "¿Cuál es el campo que deseas?: ");
-                if (campos.Contains(campo)) break;
-                Console.WriteLine("ERROR: El campo ingresado no es válido");
-            }
-            
-            return campo;
-        }
         
         private static void SubMenuSorting(Runner[] data)
         {
@@ -182,43 +163,8 @@ namespace Final {
                         except: new []{"PositionHistory", "AvgVelocityHistory"}
                     );
                     
-                    
-                    dynamic valor;
-                    Type tipo;
-                        
-                    try {
-                        tipo = typeof(Runner).GetField(campo).FieldType;
-                    } catch (NullReferenceException) {
-                        tipo = typeof(Runner).GetProperty(campo).PropertyType;
-                    }
-                    
-
-                    var genericMethod = typeof(Utils).GetMethod(nameof(GetInput))?.MakeGenericMethod(tipo);
-                    var genericMethod2 = typeof(Utils).GetMethod(nameof(FindAllMatchingElementsIndex))?.MakeGenericMethod(typeof(Runner), tipo);
-                    
-                    if (genericMethod == null) { Console.WriteLine("Ocurrió un error generando GetInput"); break; }
-                    if (genericMethod2 == null) { Console.WriteLine("Ocurrió un error generando FindAllMatchingElementsIndex"); break; }
-                    
-                    // ReSharper disable once CoVariantArrayConversion
-                    valor = genericMethod.Invoke(typeof(Utils), new []{"¿Qué valor deseas buscar?", null});
-
-                    
-                    int[] indices = (int[])genericMethod2.Invoke(typeof(Utils), new[]{data, campo, valor, null} );
-                    
-                    if (indices == null) { Console.WriteLine("Ocurrió un error generando indices"); break; }
-
-                    Console.WriteLine("Ready");
-
-                    if (indices.Length == 0)  { Console.WriteLine("ADVERTENCIA: No se encontró ningún dato"); break;}
-                    ShowHeader<Runner>(except: new []{"PositionHistory", "AvgVelocityHistory"},
+                    FilterFieldProperty(data, campo, except: new []{"PositionHistory", "AvgVelocityHistory"},
                         small: new []{"AvgPos", "Podiums", "First", "Second", "Third"});
-                        
-                    foreach (var i in indices) {
-                        ShowData(data, inRange: new (i, i+1), except: new []{"PositionHistory", "AvgVelocityHistory"},
-                            small: new []{"AvgPos", "Podiums", "First", "Second", "Third"}, showHeader:false);
-                    }
-                    
-                    
 
                     break;
                 case 3:

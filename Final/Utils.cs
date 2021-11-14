@@ -3,15 +3,67 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
+// To force not found properties and fields to throw exceptions:
+// ReSharper disable PossibleNullReferenceException
+
+
 namespace Final {
     public static class Utils {
+        
+        public static void FilterFieldProperty<T>(T[] data, string campo, string[] except = null, string[] small = null) {
+            
+            Type tipo;
+                
+            try {
+                tipo = typeof(T).GetField(campo).FieldType;
+            } catch (NullReferenceException) {
+                tipo = typeof(T).GetProperty(campo).PropertyType;
+            }
+            
+
+            var genericMethod = typeof(Utils).GetMethod(nameof(GetInput))?.MakeGenericMethod(tipo);
+            var genericMethod2 = typeof(Utils).GetMethod(nameof(FindAllMatchingElementsIndex))?.MakeGenericMethod(typeof(T), tipo);
+            
+            if (genericMethod == null) { Console.WriteLine("Ocurrió un error generando GetInput"); return; }
+            if (genericMethod2 == null) { Console.WriteLine("Ocurrió un error generando FindAllMatchingElementsIndex"); return; }
+            
+            // ReSharper disable once CoVariantArrayConversion
+            dynamic valor = genericMethod.Invoke(typeof(Utils), new []{"¿Qué valor deseas buscar?", null});
+            
+            int[] indices = (int[])genericMethod2.Invoke(typeof(Utils), new[]{data, campo, valor, null} );
+            
+            if (indices == null) { Console.WriteLine("Ocurrió un error generando indices"); return; }
+            
+
+            if (indices.Length == 0)  { Console.WriteLine("ADVERTENCIA: No se encontró ningún dato"); return;}
+            ShowHeader<T>(except, small);
+                
+            foreach (var i in indices) ShowData(data, inRange: new (i, i+1), except, small, showHeader: false);
+            
+        }
+        
+        public static string AskForFieldOrProperty<T>(string prompt = "<dsad", string[] except = null) {
+            var campos = GetAllFieldsAndProperties<T>(except);
+            Console.Write("Campos disponibles: "); foreach (var c in campos) Console.Write(c + " ");  Console.Write("\n");
+                
+            string campo;
+                    
+            while (true) {
+                campo = GetInput<string>(prompt != "<dsad" ? prompt : "¿Cuál es el campo que deseas?: ");
+                if (campos.Contains(campo)) break;
+                Console.WriteLine("ERROR: El campo ingresado no es válido");
+            }
+            
+            return campo;
+        }
+        
         /// <summary>
         /// Made with help of https://stackoverflow.com/questions/7613782/iterating-through-struct-members
         /// </summary>
         /// <param name="except"></param>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        public static string[] GetAllFieldsAndProperties<T>(string[] except = null) {
+        private static string[] GetAllFieldsAndProperties<T>(string[] except = null) {
             var result = new List<string>();
             
             foreach (var field in typeof(T).GetProperties((BindingFlags)(-1) )) { 
@@ -74,8 +126,7 @@ namespace Final {
                 } else {
                     tempResult = FindElementIndex(data, campo, find, new Tuple<int, int>(i, i + 1));
                 }
-
-                Console.WriteLine(tempResult);
+                
                 if ( tempResult != -1) result.Add(i);
             }
             
@@ -140,8 +191,8 @@ namespace Final {
             return opcion;
 
         }
-        
-        public static void ShowHeader<T>(string[] except = null, string[] small = null) {
+
+        private static void ShowHeader<T>(string[] except = null, string[] small = null) {
             var fields = typeof(T).GetFields((BindingFlags)(-1) );
             var properties = typeof(T).GetProperties((BindingFlags)(-1) );
             
