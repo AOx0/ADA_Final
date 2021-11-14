@@ -36,15 +36,7 @@ namespace Final {
         
         public static int FindElementIndex<T, TU>(T[] data, string campo, TU find,  Tuple<int, int> inRange = null ) {
             for (var i= inRange?.Item1 ?? 0; i< (inRange?.Item2 ?? data.Length); i++) {
-                dynamic data1;
-                
-                // Para si no encuentra el campo, encuentre la propiedad (Age)
-                try {
-                    data1 = data[i].GetType().GetField(campo).GetValue(data[i]);
-                } catch (NullReferenceException) {  //GetField(campo).GetValue(data[i]) can throw it if the field is not found
-                    data1 = data[i].GetType().GetProperty(campo).GetValue(data[i]);
-                }
-                
+                dynamic data1 = GetMember(data[i], campo);
                 dynamic data2 = find;
 
                 if (data1?.GetType() != data2.GetType()) continue;
@@ -54,11 +46,32 @@ namespace Final {
             return -1;
         }
         
+        public static dynamic GetMember<T>(T structInstance, string campo) {
+            dynamic data;
+            
+            // Para si no encuentra el campo, encuentre la propiedad (Age)
+            try {
+                data = structInstance.GetType().GetField(campo).GetValue(structInstance);
+            } catch (NullReferenceException) {  //GetField(campo).GetValue(data[i]) can throw it if the field is not found
+                data = structInstance.GetType().GetProperty(campo).GetValue(structInstance);
+            }
+            
+            return data;
+            
+        }
+        
         public static int[] FindAllMatchingElementsIndex<T, TU>(T[] data, string campo, TU find,  Tuple<int, int> inRange = null ) {
             var result = new List<int>();
 
             for (int i=0; i<data.Length; i++) {
-                var tempResult = FindElementIndex(data, campo, find, new Tuple<int, int>(i, i+1));
+                int tempResult;
+                if (typeof(TU) == typeof(string)) {
+                    dynamic data1 = GetMember(data[i], campo);
+                    tempResult = data1.Contains(find) == true ? i : -1;
+                } else {
+                    tempResult = FindElementIndex(data, campo, find, new Tuple<int, int>(i, i + 1));
+                }
+
                 Console.WriteLine(tempResult);
                 if ( tempResult != -1) result.Add(i);
             }
@@ -124,18 +137,8 @@ namespace Final {
             return opcion;
 
         }
-
-        /// <summary>
-        /// Made with https://stackoverflow.com/questions/7613782/iterating-through-struct-members
-        /// And with https://stackoverflow.com/questions/1955766/iterate-two-lists-or-arrays-with-one-foreach-statement-in-c-sharp/1955780
-        /// </summary>
-        /// <param name="data"></param>
-        /// <param name="inRange"></param>
-        /// <param name="except"></param>
-        /// <param name="small"></param>
-        /// <typeparam name="T"></typeparam>
-        public static void ShowData<T>(T[] data, Tuple<int, int> inRange = null, string[] except = null, string[] small = null) {
-            
+        
+        public static void ShowHeader<T>(string[] except = null, string[] small = null) {
             var fields = typeof(T).GetFields((BindingFlags)(-1) );
             var properties = typeof(T).GetProperties((BindingFlags)(-1) );
             
@@ -151,6 +154,25 @@ namespace Final {
             }
             
             Console.Write("\n");
+        }
+
+        /// <summary>
+        /// Made with https://stackoverflow.com/questions/7613782/iterating-through-struct-members
+        /// And with https://stackoverflow.com/questions/1955766/iterate-two-lists-or-arrays-with-one-foreach-statement-in-c-sharp/1955780
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="inRange"></param>
+        /// <param name="except"></param>
+        /// <param name="small"></param>
+        /// <param name="showHeader"></param>
+        /// <typeparam name="T"></typeparam>
+        public static void ShowData<T>(
+            T[] data, Tuple<int, int> inRange = null,
+            string[] except = null, string[] small = null, 
+            bool showHeader = true
+        ) {
+            
+            if (showHeader) ShowHeader<T>(except, small);
 
             for (var i= inRange?.Item1 ?? 0; i< (inRange?.Item2 ?? data.Length); i++) {
                 foreach (var field in typeof(T).GetProperties((BindingFlags)(-1) )) {
@@ -175,17 +197,8 @@ namespace Final {
             {
                 for (int i = 0; i < data.Length - 1 - j; i++)
                 {
-                    dynamic data1;
-                    dynamic data2;
-                    
-                    // Para si no encuentra el campo, encuentre la propiedad (Age)
-                    try {
-                         data1 = data[i].GetType().GetField(campo).GetValue(data[i]);
-                        data2 = data[i+1].GetType().GetField(campo).GetValue(data[i+1]);
-                    } catch (NullReferenceException) {    //GetField(campo).GetValue(data[i]) can throw it if the field is not found
-                        data1 = data[i].GetType().GetProperty(campo).GetValue(data[i]);
-                        data2 = data[i+1].GetType().GetProperty(campo).GetValue(data[i+1]);
-                    }
+                    dynamic data1 = GetMember(data[i], campo);
+                    dynamic data2 =  GetMember(data[i+1], campo);
 
                     resultado = withOperator switch {
                         Operator.Biggest => data2 > data1,

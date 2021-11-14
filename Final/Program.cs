@@ -208,11 +208,12 @@ namespace Final {
                 
                     Sort(data, campo, operador);
                     break;
-                case 2:
+                case 2: 
                     // Made with https://stackoverflow.com/questions/16699340/passing-a-type-to-a-generic-method-at-runtime
+                    // And https://stackoverflow.com/questions/29978600/c-sharp-can-convert-from-c-sharp-type-to-system-type-but-not-vice-versa
                     campo = AskForFieldOrProperty<Runner>(
                         prompt:"Cuál es el campo por el que deseas filtrar los datos?: ",
-                        except: new []{"PositionHistory", "AvgVelocityHistory", "Name", "Team"}
+                        except: new []{"PositionHistory", "AvgVelocityHistory"}
                     );
                     
                     
@@ -226,17 +227,20 @@ namespace Final {
                     }
                     
 
-                    var genericMethod = typeof(Utils).GetMethod(nameof(GetInput)).MakeGenericMethod(tipo);
+                    var genericMethod = typeof(Utils).GetMethod(nameof(GetInput))?.MakeGenericMethod(tipo);
                     valor = genericMethod.Invoke(typeof(Utils), new []{"¿Qué valor deseas buscar?", null});
 
-                    var genericMethod2 = typeof(Utils).GetMethod(nameof(FindAllMatchingElementsIndex)).MakeGenericMethod(typeof(Runner), tipo);
+                    var genericMethod2 = typeof(Utils).GetMethod(nameof(FindAllMatchingElementsIndex))?.MakeGenericMethod(typeof(Runner), tipo);
                     int[] indices = (int[])genericMethod2.Invoke(typeof(Utils), new[]{data, campo, valor, null} );
 
                     Console.WriteLine("Ready");
                     
+                    ShowHeader<Runner>(except: new []{"PositionHistory", "AvgVelocityHistory"},
+                        small: new []{"AvgPos", "Podiums", "First", "Second", "Third"});
+                    
                     foreach (var i in indices) {
                         ShowData(data, inRange: new (i, i+1), except: new []{"PositionHistory", "AvgVelocityHistory"},
-                            small: new []{"AvgPos", "Podiums", "First", "Second", "Third"});
+                            small: new []{"AvgPos", "Podiums", "First", "Second", "Third"}, showHeader:false);
                     }
                     
 
