@@ -1,8 +1,9 @@
 ﻿#define DEBUG
 
 using System;
-
+using System.Linq;
 using static Final.Utils;
+// ReSharper disable MemberCanBePrivate.Global
 
 
 namespace Final {
@@ -125,7 +126,7 @@ namespace Final {
         {
             while (true)
             {
-                var optionGral = AskForOption(new Tuple<int, int>(1, 5),
+                var optionGral = AskForOption((1, 5),
                     "\nMenu de opciones:\n"+
                     "    1. Ordenar por campo\n"+
                     "    2. Buscar por ID\n"+
@@ -139,7 +140,7 @@ namespace Final {
                 switch (optionGral)
                 {
                     case 1:
-                        SubMenuSorting(data);
+                        
                         break;
                     case 2:
                         //SubMenuSearch(data);
@@ -158,24 +159,51 @@ namespace Final {
         
         private static void SubMenuSorting(Runner[] data)
         {
-            var option = AskForOption(new  Tuple<int, int>(1, 3),
+            var option = AskForOption((1, 4),
                 "\nMenu de opciones ordenamiento:\n"+
                 "    1. Ordenar por campo\n"+
                 "    2. Buscar por campo\n" +
-                "    3. Salir\n"
+                "    3. Mostrar la tabla\n"+
+                "    4. Salir\n"
             );
+            
+            if (option == 4) return; 
+
+            switch (option) {
+                case 1:
+                    var operadorStr = AskForOption( (1, 3),
+                        "\nCómo deseas ordenarlo?\n" +
+                        "    1. Mayor a menor\n"+
+                        "    2. Menor a mayor\n"+
+                        "    3. Cancelar"
+                    );
+                    
+                    if (operadorStr == 3) break;
+                    
+                    var campos = GetAllFieldsAndProperties<Runner>(except: new []{"PositionHistory", "AvgVelocityHistory", "Name", "Team"});
+                    Console.Write("Campos disponibles: "); foreach (var c in campos) Console.Write(c + " ");  Console.Write("\n");
+                
+                    string campo;
+                    
+                    while (true) {
+                        campo = GetInput<string>(prompt: "¿Cuál es el campo por el que deseas ordenar los datos?: ");
+                        if (campos.Contains(campo)) break;
+                        Console.WriteLine("ERROR: El campo ingresado no es válido");
+                    }
+                    
+                    Operator operador = operadorStr == 1 ? Operator.Biggest : Operator.Smallest;
+                
+                    Sort(data, campo, operador);
+                    break;
+                case 3:
+                    ShowData(data, except: new []{"PositionHistory", "AvgVelocityHistory"}, 
+                        small: new []{"AvgPos", "Podiums", "First", "Second", "Third"});
+                    break;
+
+                
+            }
 
 
-            var operadorStr = AskForOption(new Tuple<int, int>(1, 2),
-                "\nCómo deseas ordenarlo?\n" +
-                "    1. Mayor a menor\n"+
-                "    2. Menor a mayor"
-            );
-                
-            //RunnerField aBuscar = option == 1 ? RunnerField.Total : option == 2 ? RunnerField.DonationsAvg : RunnerField.NumOfFloors;
-            Operator operador = operadorStr == 1 ? Operator.Biggest : Operator.Smallest;
-                
-            Sort(data, "aBuscar", operador);
         }
 
         private static void SubMenuSearch(Runner[] data, string campo, string  id) {
@@ -199,7 +227,7 @@ namespace Final {
         struct AppState {
             public int numberRaces;
             public int numberRunners;
-            public Runner[] runners;
+            public  Runner[] runners;
         }
 
         private static void Main() {
@@ -216,7 +244,7 @@ namespace Final {
 
             while (true) {
 
-                var option = AskForOption(new Tuple<int, int>(1, 3),
+                var option = AskForOption((1, 3),
                     "\nMenu de opciones:\n"+
                     "    1. Entrada de datos\n"+
                     "    2. Resultados\n" +
@@ -237,7 +265,7 @@ namespace Final {
                     case 2:
                         if (state.runners != null)
                         {
-                            
+                            SubMenuSorting(state.runners);
                         }
                         else Console.WriteLine("ERROR: Debes ingresar registros para continuar (en la opción 1)");
                         break;
@@ -247,9 +275,6 @@ namespace Final {
                 if (option == 3) break;
             }
             
-            ShowData(state.runners, except: new []{"PositionHistory", "AvgVelocityHistory"}, 
-                small: new []{"AvgPos", "Podiums", "First", "Second", "Third"});
-
         }
     }
 }

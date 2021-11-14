@@ -36,7 +36,15 @@ namespace Final {
         
         public static int FindElementIndex<T, TU>(T[] data, string campo, TU find,  Tuple<int, int> inRange = null ) {
             for (var i= inRange?.Item1 ?? 0; i< (inRange?.Item2 ?? data.Length); i++) {
-                dynamic data1 = data[i].GetType().GetField(campo)?.GetValue(data[i]);
+                dynamic data1;
+                
+                // Para si no encuentra el campo, encuentre la propiedad (Age)
+                try {
+                    data1 = data[i].GetType().GetField(campo).GetValue(data[i]);
+                } catch (NullReferenceException) {  //GetField(campo).GetValue(data[i]) can throw it if the field is not found
+                    data1 = data[i].GetType().GetProperty(campo).GetValue(data[i]);
+                }
+                
                 dynamic data2 = find;
 
                 if (data1?.GetType() != data2.GetType()) continue;
@@ -88,7 +96,7 @@ namespace Final {
         /// <param name="menu">String to be displayed to inform the user about the available options</param>
         /// <returns></returns>
         /// <exception cref="ArgumentException">Exception thrown when the programmer calls the function with invalid min-max option values</exception>
-        public static int AskForOption(Tuple<int, int> inRange, string menu) {
+        public static int AskForOption((int, int) inRange, string menu) {
             int opcion;
 
             if (inRange.Item1 < 0)  throw new ArgumentException("Opción minima debe ser mayor a 0");
@@ -96,7 +104,7 @@ namespace Final {
             
             Console.WriteLine(menu);
             do {
-                opcion = GetInput($"Ingresa una opción ({inRange.Item1}-{inRange.Item2}): ", inRange);
+                opcion = GetInput<int>($"Ingresa una opción ({inRange.Item1}-{inRange.Item2}): ", new (inRange.Item1, inRange.Item2));
                 if (opcion <= inRange.Item2 && opcion >= inRange.Item1) break;
             } while (true);
 
@@ -106,6 +114,7 @@ namespace Final {
 
         /// <summary>
         /// Made with https://stackoverflow.com/questions/7613782/iterating-through-struct-members
+        /// And with https://stackoverflow.com/questions/1955766/iterate-two-lists-or-arrays-with-one-foreach-statement-in-c-sharp/1955780
         /// </summary>
         /// <param name="data"></param>
         /// <param name="inRange"></param>
@@ -114,14 +123,16 @@ namespace Final {
         /// <typeparam name="T"></typeparam>
         public static void ShowData<T>(T[] data, Tuple<int, int> inRange = null, string[] except = null, string[] small = null) {
             
+            var fields = typeof(T).GetFields((BindingFlags)(-1) );
+            var properties = typeof(T).GetProperties((BindingFlags)(-1) );
             
-            
-            foreach (var field in typeof(T).GetProperties((BindingFlags)(-1) )) { 
-                if (except != null && except.Contains(field.Name)) continue;
-                Console.Write("{0,-5}  ", field.Name);
+
+            foreach (var property in properties) { 
+                if (except != null && except.Contains(property.Name)) continue;
+                Console.Write("{0,-5}  ", property.Name);
             }
             
-            foreach (var field in typeof(T).GetFields((BindingFlags)(-1) )) { 
+            foreach (var field in fields) { 
                 if (except != null && except.Contains(field.Name)) continue;
                 Console.Write(small != null && small.Contains(field.Name) ? "{0,-10}" :  "{0,-20}  ", field.Name);
             }
@@ -144,15 +155,24 @@ namespace Final {
             
         }
         
-        public static void Sort<T>(T[] data, string campo, Operator withOperator, Tuple<int, int> inRange = null) {
+        public static void Sort<T>(T[] data, string campo, Operator withOperator, Tuple<int, int> inRange = null, bool show = false ) {
             bool resultado = false;
 
             for (int j = 0; j < data.Length - 1; j++)
             {
                 for (int i = 0; i < data.Length - 1 - j; i++)
                 {
-                    dynamic data1 = data[i].GetType().GetProperty(campo);
-                    dynamic data2 = data[i+1].GetType().GetProperty(campo);
+                    dynamic data1;
+                    dynamic data2;
+                    
+                    // Para si no encuentra el campo, encuentre la propiedad (Age)
+                    try {
+                         data1 = data[i].GetType().GetField(campo).GetValue(data[i]);
+                        data2 = data[i+1].GetType().GetField(campo).GetValue(data[i+1]);
+                    } catch (NullReferenceException) {    //GetField(campo).GetValue(data[i]) can throw it if the field is not found
+                        data1 = data[i].GetType().GetProperty(campo).GetValue(data[i]);
+                        data2 = data[i+1].GetType().GetProperty(campo).GetValue(data[i+1]);
+                    }
 
                     resultado = withOperator switch {
                         Operator.Biggest => data2 > data1,
@@ -163,9 +183,10 @@ namespace Final {
                     if (!resultado) continue;
                     
                     (data[i], data[i + 1]) = (data[i + 1], data[i]);
+                    
                 }
             }
-            ShowData(data, inRange);
+            if (show) ShowData(data, inRange);
         }
     }
 }
