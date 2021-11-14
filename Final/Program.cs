@@ -2,20 +2,21 @@
 
 using System;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.Intrinsics.Arm;
 using static Final.Utils;
 // ReSharper disable MemberCanBePrivate.Global
+
+// To force not found properties and fields to throw exceptions:
+// ReSharper disable PossibleNullReferenceException
 
 
 namespace Final {
     internal static class Program {
         public struct Runner {
             
-            public string Name;
-            public string Team;
+            public readonly string Name;
+            public readonly string Team;
 
-            public double Salary;
+            public readonly double Salary;
 
             public readonly DateTime Birthday;
 
@@ -119,47 +120,12 @@ namespace Final {
         }
 
         private static void InputData(AppState state) {
-            for (var i=0; i<state.numberRunners; i++) {
-                state.runners[i] = new Runner(state.runners, i,  state.numberRaces, state.numberRunners);
+            for (var i=0; i<state.NumberRunners; i++) {
+                state.Runners[i] = new Runner(state.Runners, i,  state.NumberRaces, state.NumberRunners);
             }
         }
-        
-        private static void SubMenu(Runner[] data)
-        {
-            while (true)
-            {
-                var optionGral = AskForOption((1, 5),
-                    "\nMenu de opciones:\n"+
-                    "    1. Ordenar por campo\n"+
-                    "    2. Buscar por ID\n"+
-                    "    3. Mostrar resumen\n"+
-                    "    4. Mostrar 4 propiedades con mejor promedio\n"+
-                    "    5. Salir"
-                );
-                
-                if (optionGral == 5) break;
-                
-                switch (optionGral)
-                {
-                    case 1:
-                        
-                        break;
-                    case 2:
-                        //SubMenuSearch(data);
-                        break;
-                    case 3:
-                        ShowNutshell(data);
-                        break;
-                    case 4:
-                        Sort(data, "RunnerField.DonationsAvg", Operator.Biggest,
-                            new Tuple<int, int>(0, 4)
-                        );
-                        break;
-                }
-            }
-        }
-        
-        
+
+
         private static string AskForFieldOrProperty<T>(string prompt = "<dsad", string[] except = null) {
             var campos = GetAllFieldsAndProperties<T>(except);
             Console.Write("Campos disponibles: "); foreach (var c in campos) Console.Write(c + " ");  Console.Write("\n");
@@ -228,20 +194,30 @@ namespace Final {
                     
 
                     var genericMethod = typeof(Utils).GetMethod(nameof(GetInput))?.MakeGenericMethod(tipo);
+                    var genericMethod2 = typeof(Utils).GetMethod(nameof(FindAllMatchingElementsIndex))?.MakeGenericMethod(typeof(Runner), tipo);
+                    
+                    if (genericMethod == null) { Console.WriteLine("Ocurrió un error generando GetInput"); break; }
+                    if (genericMethod2 == null) { Console.WriteLine("Ocurrió un error generando FindAllMatchingElementsIndex"); break; }
+                    
+                    // ReSharper disable once CoVariantArrayConversion
                     valor = genericMethod.Invoke(typeof(Utils), new []{"¿Qué valor deseas buscar?", null});
 
-                    var genericMethod2 = typeof(Utils).GetMethod(nameof(FindAllMatchingElementsIndex))?.MakeGenericMethod(typeof(Runner), tipo);
+                    
                     int[] indices = (int[])genericMethod2.Invoke(typeof(Utils), new[]{data, campo, valor, null} );
+                    
+                    if (indices == null) { Console.WriteLine("Ocurrió un error generando indices"); break; }
 
                     Console.WriteLine("Ready");
-                    
+
+                    if (indices.Length == 0)  { Console.WriteLine("ADVERTENCIA: No se encontró ningún dato"); break;}
                     ShowHeader<Runner>(except: new []{"PositionHistory", "AvgVelocityHistory"},
                         small: new []{"AvgPos", "Podiums", "First", "Second", "Third"});
-                    
+                        
                     foreach (var i in indices) {
                         ShowData(data, inRange: new (i, i+1), except: new []{"PositionHistory", "AvgVelocityHistory"},
                             small: new []{"AvgPos", "Podiums", "First", "Second", "Third"}, showHeader:false);
                     }
+                    
                     
 
                     break;
@@ -256,42 +232,16 @@ namespace Final {
 
         }
 
-        private static void SubMenuSearch(Runner[] data, string campo, string  id) {
-            
-            var indexId = FindElementIndex(data, campo, id);
-            if (indexId == -1) {
-                Console.WriteLine("ERROR: El valor no existe\n"); return;
-            } 
-            ShowData(data, new Tuple<int, int>(indexId, indexId+1));
-        }
-        
-        private static void ShowNutshell(Runner[] data)  {
-            
-            
-            foreach (var info in data) {
-                
-                //promedioPisos += info.NumOfFloors;
-            }
-        }
-        
         struct AppState {
-            public int numberRaces;
-            public int numberRunners;
-            public  Runner[] runners;
+            public int NumberRaces;
+            public int NumberRunners;
+            public  Runner[] Runners;
         }
 
         private static void Main() {
-            /* 
-            Console.WriteLine(string.Join(", ", GetAllFieldsAndProperties<Runner>(
-                except: new []{"PositionHistory", "AvgVelocityHistory"}
-            )));
-            */
+
+            AppState state = new AppState { Runners = null };
             
-            AppState state = new AppState {
-                runners = null
-            };
-
-
             while (true) {
 
                 var option = AskForOption((1, 3),
@@ -304,18 +254,18 @@ namespace Final {
                 switch (option)
                 {
                     case 1:
-                        state.numberRaces = GetInput("Ingresa el número de carreras de la temporada (6-25):",
+                        state.NumberRaces = GetInput("Ingresa el número de carreras de la temporada (6-25):",
                             new Tuple<int, int>(6, 25));
-                        state.numberRunners = GetInput("Ingresa el número de corredores en la competencia (6-26): ",
+                        state.NumberRunners = GetInput("Ingresa el número de corredores en la competencia (6-26): ",
                             new Tuple<int, int>(6, 26));
-                        state.runners = new Runner[state.numberRunners];
+                        state.Runners = new Runner[state.NumberRunners];
                             
                         InputData(state);
                         break;
                     case 2:
-                        if (state.runners != null)
+                        if (state.Runners != null)
                         {
-                            SubMenuSorting(state.runners);
+                            SubMenuSorting(state.Runners);
                         }
                         else Console.WriteLine("ERROR: Debes ingresar registros para continuar (en la opción 1)");
                         break;

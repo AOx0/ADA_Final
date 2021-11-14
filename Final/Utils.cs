@@ -45,21 +45,24 @@ namespace Final {
             
             return -1;
         }
-        
-        public static dynamic GetMember<T>(T structInstance, string campo) {
+
+        private static dynamic GetMember<T>(T structInstance, string campo) {
+            
             dynamic data;
             
-            // Para si no encuentra el campo, encuentre la propiedad (Age)
+            // If a field named as the value 'campo' is not found, then try get a property.
             try {
+                // ReSharper disable once PossibleNullReferenceException
                 data = structInstance.GetType().GetField(campo).GetValue(structInstance);
             } catch (NullReferenceException) {  //GetField(campo).GetValue(data[i]) can throw it if the field is not found
+                // ReSharper disable once PossibleNullReferenceException
                 data = structInstance.GetType().GetProperty(campo).GetValue(structInstance);
             }
             
             return data;
             
         }
-        
+        // With help of https://stackoverflow.com/questions/2004508/checking-type-parameter-of-a-generic-method-in-c-sharp
         public static int[] FindAllMatchingElementsIndex<T, TU>(T[] data, string campo, TU find,  Tuple<int, int> inRange = null ) {
             var result = new List<int>();
 
