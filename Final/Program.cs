@@ -45,7 +45,6 @@ namespace Final {
                 foreach (var position in PositionHistory) {
                     if (pos == position) sum++;
                 }
-                
                 return sum;
             }
 
@@ -127,6 +126,8 @@ namespace Final {
         
         private static void SubMenuSorting(Runner[] data)
         {
+            string campo;
+            
             var option = AskForOption((1, 4),
                 "\nMenu de opciones:\n"+
                 "    1. Ordenar por campo\n"+
@@ -136,11 +137,10 @@ namespace Final {
             );
             
             if (option == 4) return;
-
-            string campo;
+            
             switch (option) {
                 case 1:
-                    var operadorStr = AskForOption( (1, 3),
+                    var operadorStr = AskForOption((1, 3),
                         "\nCómo deseas ordenarlo?\n" +
                         "    1. Mayor a menor\n"+
                         "    2. Menor a mayor\n"+
@@ -157,6 +157,7 @@ namespace Final {
                     Operator operador = operadorStr == 1 ? Operator.Biggest : Operator.Smallest;
                 
                     Sort(data, campo, operador);
+                    ShowData(data, except: Unsearchable, small: AlwaysSmall);
                     break;
                 case 2: 
                     // Made with https://stackoverflow.com/questions/16699340/passing-a-type-to-a-generic-method-at-runtime
@@ -166,7 +167,9 @@ namespace Final {
                         except: Unsearchable
                     );
                     
-                    FilterFieldProperty(data, campo, except: Unsearchable,  small: AlwaysSmall);
+                    bool strict = GetInput<string>("¿Deseas que la búsqueda sea estricta? [y/n]: ") == "y";
+
+                    FilterFieldProperty(data, campo, except: Unsearchable,  small: AlwaysSmall, strict: strict);
 
                     break;
                 case 3:

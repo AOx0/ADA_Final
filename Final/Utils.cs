@@ -10,7 +10,8 @@ using System.Reflection;
 namespace Final {
     public static class Utils {
         
-        public static void FilterFieldProperty<T>(T[] data, string campo, string[] except = null, string[] small = null) {
+        
+        public static void FilterFieldProperty<T>(T[] data, string campo, string[] except = null, string[] small = null, bool strict=true) {
             
             Type tipo;
                 
@@ -20,24 +21,33 @@ namespace Final {
                 tipo = typeof(T).GetProperty(campo).PropertyType;
             }
             
+            int[] indices;
+            if (strict)
+            {
+                var genericMethod = typeof(Utils).GetMethod(nameof(GetInput))?.MakeGenericMethod(tipo);
+                var genericMethod2 = typeof(Utils).GetMethod(nameof(FindAllMatchingElementsIndex))?.MakeGenericMethod(typeof(T), tipo);
 
-            var genericMethod = typeof(Utils).GetMethod(nameof(GetInput))?.MakeGenericMethod(tipo);
-            var genericMethod2 = typeof(Utils).GetMethod(nameof(FindAllMatchingElementsIndex))?.MakeGenericMethod(typeof(T), tipo);
+                // ReSharper disable once CoVariantArrayConversion
+                dynamic valor = genericMethod.Invoke(typeof(Utils), new []{"¿Qué valor deseas buscar?", null});
             
-            if (genericMethod == null) { Console.WriteLine("Ocurrió un error generando GetInput"); return; }
-            if (genericMethod2 == null) { Console.WriteLine("Ocurrió un error generando FindAllMatchingElementsIndex"); return; }
+                indices = (int[])genericMethod2.Invoke(typeof(Utils), new[]{data, campo, valor, null, null} );
             
-            // ReSharper disable once CoVariantArrayConversion
-            dynamic valor = genericMethod.Invoke(typeof(Utils), new []{"¿Qué valor deseas buscar?", null});
-            
-            int[] indices = (int[])genericMethod2.Invoke(typeof(Utils), new[]{data, campo, valor, null} );
-            
-            if (indices == null) { Console.WriteLine("Ocurrió un error generando indices"); return; }
-            
-
-            if (indices.Length == 0)  { Console.WriteLine("ADVERTENCIA: No se encontró ningún dato"); return;}
-            ShowHeader<T>(except, small);
+                if (indices == null) { Console.WriteLine("Ocurrió un error generando indices"); return; }
                 
+                if (indices.Length == 0) {  Console.WriteLine("ADVERTENCIA: No se encontró ningún dato, intenta buscar de forma no estricta"); return; }
+            } else {
+                var valor = GetInput<string>("¿Qué valor deseas buscar?");
+                indices = FindAllMatchingElementsIndex(data, campo, valor, null, strict: false );
+                if (indices.Length == 0)  { Console.WriteLine("ADVERTENCIA: No se encontró ningún dato"); return;}
+                
+            }
+
+
+           
+
+            
+            
+            ShowHeader<T>(except, small);
             foreach (var i in indices) ShowData(data, inRange: new (i, i+1), except, small, showHeader: false);
             
         }
@@ -115,14 +125,14 @@ namespace Final {
             
         }
         // With help of https://stackoverflow.com/questions/2004508/checking-type-parameter-of-a-generic-method-in-c-sharp
-        public static int[] FindAllMatchingElementsIndex<T, TU>(T[] data, string campo, TU find,  Tuple<int, int> inRange = null ) {
+        public static int[] FindAllMatchingElementsIndex<T, TU>(T[] data, string campo, TU find,  Tuple<int, int> inRange = null, bool strict = true ) {
             var result = new List<int>();
 
             for (int i=0; i<data.Length; i++) {
                 int tempResult;
-                if (typeof(TU) == typeof(string)) {
+                if (typeof(TU) == typeof(string) || strict == false) {
                     dynamic data1 = GetMember(data[i], campo);
-                    tempResult = data1.Contains(find) == true ? i : -1;
+                    tempResult = $"{data1}".Contains($"{find}") == true ? i : -1;
                 } else {
                     tempResult = FindElementIndex(data, campo, find, new Tuple<int, int>(i, i + 1));
                 }
