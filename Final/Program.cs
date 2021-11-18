@@ -1,4 +1,4 @@
-﻿#define DEBUG
+﻿#undef DEBUG
 
 using System;
 using static Final.Utils;
@@ -9,10 +9,12 @@ using static Final.Utils;
 namespace Final {
     internal static class Program {
         
-        public static readonly string[] Unsearchable = {"PositionHistory", "AvgVelocityHistory"};
+        public static readonly string[] Unprintable = {"PositionHistory", "AvgVelocityHistory"};
         public static readonly string[] AlwaysSmall = {"AvgPos", "Podiums", "First", "Second", "Third"};
         public struct Runner {
             
+            private readonly int _id;
+            public readonly int ID => _id;
             public readonly string Name;
             public readonly string Team;
 
@@ -55,6 +57,7 @@ namespace Final {
             
             
             public Runner(Runner[] alreadyRegistered, int numRegistered, int numberRaces, int numberRunners) {
+                _id = numRegistered;
                 while (true) {
                     Name = GetInput<string>($"\nIngresa el nombre del corredor {numRegistered + 1}: ");
                     if (FindElementIndex(alreadyRegistered, "Name", Name , new Tuple<int, int>(0, numRegistered)) == -1) break;
@@ -124,65 +127,61 @@ namespace Final {
             }
         }
         
-        private static void SubMenuSorting(Runner[] data)
+        private static void SubMenuResults(Runner[] data)
         {
-            string campo;
+            while (true) {
+                string campo;
             
-            var option = AskForOption((1, 4),
-                "\nMenu de opciones:\n"+
-                "    1. Ordenar por campo\n"+
-                "    2. Buscar por campo\n" +
-                "    3. Mostrar la tabla\n"+
-                "    4. Salir\n"
-            );
-            
-            if (option == 4) return;
-            
-            switch (option) {
-                case 1:
-                    var operadorStr = AskForOption((1, 3),
-                        "\nCómo deseas ordenarlo?\n" +
-                        "    1. Mayor a menor\n"+
-                        "    2. Menor a mayor\n"+
-                        "    3. Cancelar"
-                    );
-                    
-                    if (operadorStr == 3) break;
-                    
-                    campo = AskForFieldOrProperty<Runner>(
-                        prompt:"Cuál es el campo por el que deseas ordenar los datos?: ",
-                        except: new []{"PositionHistory", "AvgVelocityHistory", "Name", "Team"}
-                    );
-                    
-                    Operator operador = operadorStr == 1 ? Operator.Biggest : Operator.Smallest;
+                var option = AskForOption((1, 4),
+                    "\nMenu de opciones:\n"+
+                    "    1. Ordenar por campo\n"+
+                    "    2. Buscar por campo\n" +
+                    "    3. Mostrar la tabla\n"+
+                    "    4. Salir\n"
+                );
                 
-                    Sort(data, campo, operador);
-                    ShowData(data, except: Unsearchable, small: AlwaysSmall);
-                    break;
-                case 2: 
-                    // Made with https://stackoverflow.com/questions/16699340/passing-a-type-to-a-generic-method-at-runtime
-                    // And https://stackoverflow.com/questions/29978600/c-sharp-can-convert-from-c-sharp-type-to-system-type-but-not-vice-versa
-                    campo = AskForFieldOrProperty<Runner>(
-                        prompt:"Cuál es el campo por el que deseas filtrar los datos?: ",
-                        except: Unsearchable
-                    );
-                    
-                    bool strict = GetInput<string>("¿Deseas que la búsqueda sea estricta? [y/n]: ") == "y";
-
-                    FilterFieldProperty(data, campo, except: Unsearchable,  small: AlwaysSmall, strict: strict);
-
-                    break;
-                case 3:
-                    ShowData(data, except: Unsearchable, small: AlwaysSmall);
-                    break;
-
+                if (option == 4) return;
                 
+                switch (option) {
+                    case 1:
+                        var operadorStr = AskForOption((1, 3),
+                            "\nCómo deseas ordenarlo?\n" +
+                            "    1. Mayor a menor\n"+
+                            "    2. Menor a mayor\n"+
+                            "    3. Cancelar"
+                        );
+                        
+                        if (operadorStr == 3) break;
+                        
+                        campo = AskForFieldOrProperty<Runner>(
+                            prompt:"Cuál es el campo por el que deseas ordenar los datos?: ",
+                            except: new []{"PositionHistory", "AvgVelocityHistory", "Name", "Team"}
+                        );
+                        
+                        Operator operador = operadorStr == 1 ? Operator.Biggest : Operator.Smallest;
+                    
+                        Sort(data, campo, operador);
+                        ShowData(data, except: Unprintable, small: AlwaysSmall);
+                        break;
+                    case 2: 
+                        
+                        campo = AskForFieldOrProperty<Runner>(
+                            prompt:"Cuál es el campo por el que deseas filtrar los datos?: ", except: Unprintable
+                        );
+                        
+                        bool strict = GetInput<string>("¿Deseas que la búsqueda sea estricta? [y/n]: ").ToLower() == "y";
+
+                        FilterFieldProperty(data, campo, except: Unprintable,  small: AlwaysSmall, strict: strict);
+
+                        break;
+                    case 3:
+                        ShowData(data, except: Unprintable, small: AlwaysSmall);
+                        break;
+                }
             }
-
-
         }
 
-        struct AppState {
+        private struct AppState {
             public int NumberRaces;
             public int NumberRunners;
             public  Runner[] Runners;
@@ -213,7 +212,7 @@ namespace Final {
                         InputData(state);
                         break;
                     case 2:
-                        if (state.Runners != null) SubMenuSorting(state.Runners);
+                        if (state.Runners != null) SubMenuResults(state.Runners);
                         else Console.WriteLine("ERROR: Debes ingresar registros para continuar (en la opción 1)");
                         break;
                 }

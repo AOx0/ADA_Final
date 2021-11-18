@@ -1,3 +1,6 @@
+#undef DEBUG
+
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,47 +13,48 @@ using System.Reflection;
 namespace Final {
     public static class Utils {
         
-        
+        /// <summary>
+        /// Made with https://stackoverflow.com/a/16699405/14916353
+        /// And https://stackoverflow.com/a/29978661/14916353
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="campo"></param>
+        /// <param name="except"></param>
+        /// <param name="small"></param>
+        /// <param name="strict"></param>
+        /// <typeparam name="T"></typeparam>
         public static void FilterFieldProperty<T>(T[] data, string campo, string[] except = null, string[] small = null, bool strict=true) {
-            
-            Type tipo;
-                
-            try {
-                tipo = typeof(T).GetField(campo).FieldType;
-            } catch (NullReferenceException) {
-                tipo = typeof(T).GetProperty(campo).PropertyType;
-            }
-            
+
             int[] indices;
             if (strict)
             {
+                Type tipo;
+                
+                try {
+                    tipo = typeof(T).GetField(campo).FieldType;
+                } catch (NullReferenceException) {
+                    tipo = typeof(T).GetProperty(campo).PropertyType;
+                }
+                
                 var genericMethod = typeof(Utils).GetMethod(nameof(GetInput))?.MakeGenericMethod(tipo);
                 var genericMethod2 = typeof(Utils).GetMethod(nameof(FindAllMatchingElementsIndex))?.MakeGenericMethod(typeof(T), tipo);
 
                 // ReSharper disable once CoVariantArrayConversion
-                dynamic valor = genericMethod.Invoke(typeof(Utils), new []{"¿Qué valor deseas buscar?", null});
+                dynamic valor = genericMethod.Invoke(typeof(Utils), new []{"¿Qué valor deseas buscar?: ", null});
             
                 indices = (int[])genericMethod2.Invoke(typeof(Utils), new[]{data, campo, valor, null, null} );
-            
-                if (indices == null) { Console.WriteLine("Ocurrió un error generando indices"); return; }
-                
                 if (indices.Length == 0) {  Console.WriteLine("ADVERTENCIA: No se encontró ningún dato, intenta buscar de forma no estricta"); return; }
             } else {
-                var valor = GetInput<string>("¿Qué valor deseas buscar?");
+                var valor = GetInput<string>("¿Qué valor deseas buscar?: ");
                 indices = FindAllMatchingElementsIndex(data, campo, valor, null, strict: false );
                 if (indices.Length == 0)  { Console.WriteLine("ADVERTENCIA: No se encontró ningún dato"); return;}
                 
             }
-
-
-           
-
-            
             
             ShowHeader<T>(except, small);
-            foreach (var i in indices) ShowData(data, inRange: new (i, i+1), except, small, showHeader: false);
-            
+            foreach (var i in indices) ShowData(data, inRange: new Tuple<int, int>(i, i+1), except, small, showHeader: false);
         }
+        
         
         public static string AskForFieldOrProperty<T>(string prompt = "0000000000000000", string[] except = null) {
             var campos = GetAllFieldsAndProperties<T>(except);
@@ -77,12 +81,12 @@ namespace Final {
             var result = new List<string>();
             
             foreach (var field in typeof(T).GetProperties((BindingFlags)(-1) )) { 
-                if (except != null && except.Contains(field.Name)) continue;
+                if (except != null && except.Contains(field.Name) || field.Name.Contains("_")) continue;
                 result.Add(field.Name);
             }
             
             foreach (var field in typeof(T).GetFields((BindingFlags)(-1) )) { 
-                if (except != null && except.Contains(field.Name)) continue;
+                if (except != null && except.Contains(field.Name) || field.Name.Contains("_")) continue;
                 result.Add(field.Name);
             }
             
@@ -98,7 +102,7 @@ namespace Final {
         
         public static int FindElementIndex<T, TU>(T[] data, string campo, TU find,  Tuple<int, int> inRange = null ) {
             for (var i= inRange?.Item1 ?? 0; i< (inRange?.Item2 ?? data.Length); i++) {
-                dynamic data1 = GetMember(data[i], campo);
+                dynamic data1 = GetMemberValue(data[i], campo);
                 dynamic data2 = find;
 
                 if (data1?.GetType() != data2.GetType()) continue;
@@ -108,7 +112,7 @@ namespace Final {
             return -1;
         }
 
-        private static dynamic GetMember<T>(T structInstance, string campo) {
+        private static dynamic GetMemberValue<T>(T structInstance, string campo) {
             
             dynamic data;
             
@@ -131,8 +135,8 @@ namespace Final {
             for (int i=0; i<data.Length; i++) {
                 int tempResult;
                 if (typeof(TU) == typeof(string) || strict == false) {
-                    dynamic data1 = GetMember(data[i], campo);
-                    tempResult = $"{data1}".Contains($"{find}") == true ? i : -1;
+                    dynamic data1 = GetMemberValue(data[i], campo);
+                    tempResult = $"{data1}".Contains($"{find}") ? i : -1;
                 } else {
                     tempResult = FindElementIndex(data, campo, find, new Tuple<int, int>(i, i + 1));
                 }
@@ -194,7 +198,7 @@ namespace Final {
             
             Console.WriteLine(menu);
             do {
-                opcion = GetInput<int>($"Ingresa una opción ({inRange.Item1}-{inRange.Item2}): ", new (inRange.Item1, inRange.Item2));
+                opcion = GetInput<int>($"Ingresa una opción ({inRange.Item1}-{inRange.Item2}): ", new Tuple<int, int>(inRange.Item1, inRange.Item2));
                 if (opcion <= inRange.Item2 && opcion >= inRange.Item1) break;
             } while (true);
 
@@ -206,14 +210,13 @@ namespace Final {
             var fields = typeof(T).GetFields((BindingFlags)(-1) );
             var properties = typeof(T).GetProperties((BindingFlags)(-1) );
             
-
             foreach (var property in properties) { 
-                if (except != null && except.Contains(property.Name)) continue;
+                if (except != null && except.Contains(property.Name) || property.Name.Contains("_")) continue;
                 Console.Write("{0,-5}  ", property.Name);
             }
             
             foreach (var field in fields) { 
-                if (except != null && except.Contains(field.Name)) continue;
+                if (except != null && except.Contains(field.Name) || field.Name.Contains("_")) continue;
                 Console.Write(small != null && small.Contains(field.Name) ? "{0,-10}" :  "{0,-20}  ", field.Name);
             }
             
@@ -240,11 +243,11 @@ namespace Final {
 
             for (var i= inRange?.Item1 ?? 0; i< (inRange?.Item2 ?? data.Length); i++) {
                 foreach (var field in typeof(T).GetProperties((BindingFlags)(-1) )) {
-                    if (except != null && except.Contains(field.Name)) continue;
+                    if (except != null && except.Contains(field.Name) || field.Name.Contains("_")) continue;
                     Console.Write("{0,-5}  ", field.GetValue(data[i])?.ToString()?.Replace("00:00:00", ""));
                 } 
                 foreach (var field in typeof(T).GetFields((BindingFlags)(-1) )) {
-                    if (except != null && except.Contains(field.Name)) continue;
+                    if (except != null && except.Contains(field.Name) || field.Name.Contains("_")) continue;
                     Console.Write(small != null && small.Contains(field.Name) ? "{0,-10}" :  "{0,-20}  ", 
                         field.GetValue(data[i])?.ToString()?.Replace("00:00:00", ""));
                 } 
@@ -261,8 +264,8 @@ namespace Final {
             {
                 for (int i = 0; i < data.Length - 1 - j; i++)
                 {
-                    dynamic data1 = GetMember(data[i], campo);
-                    dynamic data2 =  GetMember(data[i+1], campo);
+                    dynamic data1 = GetMemberValue(data[i], campo);
+                    dynamic data2 = GetMemberValue(data[i+1], campo);
 
                     resultado = withOperator switch {
                         Operator.Biggest => data2 > data1,
