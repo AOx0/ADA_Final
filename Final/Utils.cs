@@ -42,7 +42,7 @@ namespace Final {
                 // ReSharper disable once CoVariantArrayConversion
                 dynamic valor = genericMethod.Invoke(typeof(Utils), new []{"¿Qué valor deseas buscar?: ", null});
             
-                indices = (int[])genericMethod2.Invoke(typeof(Utils), new[]{data, campo, valor, null, null} );
+                indices = (int[])genericMethod2.Invoke(typeof(Utils), new[]{data, campo, valor, null, true} );
                 if (indices.Length == 0) {  Console.WriteLine("ADVERTENCIA: No se encontró ningún dato, intenta buscar de forma no estricta"); return; }
             } else {
                 var valor = GetInput<string>("¿Qué valor deseas buscar?: ");
@@ -56,14 +56,22 @@ namespace Final {
         }
         
         
-        public static string AskForFieldOrProperty<T>(string prompt = "0000000000000000", string[] except = null) {
+        /// <summary>
+        /// Ask the user to input the name of one of the members of a structure.
+        /// The method also verifies if the user did enter a valid name and repeats and does not return until a valid option is provided 
+        /// </summary>
+        /// <param name="prompt">The message to prompt to the user to ask for a T class member name</param>
+        /// <param name="except"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public static string AskForFieldOrProperty<T>(string prompt = "default", string[] except = null) {
             var campos = GetAllFieldsAndProperties<T>(except);
             Console.Write("Campos disponibles: "); foreach (var c in campos) Console.Write(c + " ");  Console.Write("\n");
                 
             string campo;
                     
             while (true) {
-                campo = GetInput<string>(prompt != "0000000000000000" ? prompt : "¿Cuál es el campo que deseas?: ");
+                campo = GetInput<string>(prompt != "default" ? prompt : "¿Cuál es el campo que deseas?: ");
                 if (campos.Contains(campo)) break;
                 Console.WriteLine("ERROR: El campo ingresado no es válido");
             }
@@ -241,7 +249,11 @@ namespace Final {
             
             if (showHeader) ShowHeader<T>(except, small);
 
+            
             for (var i= inRange?.Item1 ?? 0; i< (inRange?.Item2 ?? data.Length); i++) {
+                
+                if (GetMemberValue(data[i], "ID") == 0) continue;
+                
                 foreach (var field in typeof(T).GetProperties((BindingFlags)(-1) )) {
                     if (except != null && except.Contains(field.Name) || field.Name.Contains("_")) continue;
                     Console.Write("{0,-5}  ", field.GetValue(data[i])?.ToString()?.Replace("00:00:00", ""));

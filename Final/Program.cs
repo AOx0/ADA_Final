@@ -9,8 +9,7 @@ using static Final.Utils;
 namespace Final {
     internal static class Program {
         
-        public static readonly string[] Unprintable = {"PositionHistory", "AvgVelocityHistory"};
-        public static readonly string[] AlwaysSmall = {"AvgPos", "Podiums", "First", "Second", "Third"};
+        public static readonly string[] AlwaysSmall = { "AvgSpeed", "AvgPos", "Podiums", "First", "Second", "Third", "Runners"};
         public struct Runner {
             
             private readonly int _id;
@@ -18,13 +17,15 @@ namespace Final {
             public readonly string Name;
             public readonly string Team;
 
-            public readonly double Salary;
+            public readonly double SalaryPerRace;
+            
+            public readonly double TotalSalary;
 
             public readonly DateTime Birthday;
 
             
-            public readonly int[] PositionHistory;
-            public readonly float[] AvgVelocityHistory;
+            public readonly int[] _PositionHistory;
+            public readonly float[] _AvgVelocityHistory;
 
             public int Age {
                 get {
@@ -35,8 +36,8 @@ namespace Final {
                 }
             }
             
-            public float AvgSpeed;
-            public float AvgPos;
+            public double AvgSpeed;
+            public double AvgPos;
             public int Podiums;
             public int First;
             public int Second;
@@ -44,20 +45,25 @@ namespace Final {
             
             private int NumberOfMatches(int pos) {
                 int sum = 0;
-                foreach (var position in PositionHistory) {
+                foreach (var position in _PositionHistory) {
                     if (pos == position) sum++;
                 }
                 return sum;
             }
 
-            public double TotalSalary() {
-                int result = 0;
-                return result;
+            private static double CalculateTotalSalary(double baseSalary, int[] positionHistory) {
+                double result = baseSalary;
+
+                foreach (var position in positionHistory) {
+                    result += 50000/(double)position;
+                }
+
+                return Math.Round(result, 2);
             }
-            
-            
+
+
             public Runner(Runner[] alreadyRegistered, int numRegistered, int numberRaces, int numberRunners) {
-                _id = numRegistered;
+                _id = numRegistered+1;
                 while (true) {
                     Name = GetInput<string>($"\nIngresa el nombre del corredor {numRegistered + 1}: ");
                     if (FindElementIndex(alreadyRegistered, "Name", Name , new Tuple<int, int>(0, numRegistered)) == -1) break;
@@ -65,7 +71,7 @@ namespace Final {
                 }
                
                 Team = GetInput<string>("Ingresa el nombre del Team: ");
-                Salary =  GetInput<double>("Ingresa el salario base: $");
+                SalaryPerRace =  GetInput<double>("Ingresa el salario base: $");
                 while (true) {
                     try {
                         Birthday = DateTime.ParseExact(GetInput<string>("Ingresa la fecha de nacimiento (dd/MM/yyyy): "), "dd/MM/yyyy", null);
@@ -75,8 +81,8 @@ namespace Final {
                     }
                 }
                 
-                PositionHistory = new int[numberRaces];
-                AvgVelocityHistory = new float[numberRaces];
+                _PositionHistory = new int[numberRaces];
+                _AvgVelocityHistory = new float[numberRaces];
                 
                 AvgPos = 0;
                 Podiums = 0;
@@ -84,15 +90,17 @@ namespace Final {
                 Second = 0;
                 Third = 0;
                 AvgSpeed = 0;
+                
+                
 
                 for (var raceN=0; raceN < numberRaces; raceN++) {
                     
-                    PositionHistory[raceN] = GetInput($"Ingresa la posición del corredor en la carrera {raceN} (1-{numberRunners}): ",
+                    _PositionHistory[raceN] = GetInput($"Ingresa la posición del corredor en la carrera {raceN} (1-{numberRunners}): ",
                         new Tuple<int, int>(1, numberRunners));
 
                     bool wasRegistered = false;
                     for (var pilotN=0; pilotN< numRegistered; pilotN++) {
-                        if (alreadyRegistered[pilotN].PositionHistory[raceN] != PositionHistory[raceN]) continue;
+                        if (alreadyRegistered[pilotN]._PositionHistory[raceN] != _PositionHistory[raceN]) continue;
                         Console.WriteLine($"ERROR: Otro corredor ya fue registrado con esa posición en la carrera {raceN}");
                         raceN--;
                         wasRegistered = true;
@@ -101,33 +109,114 @@ namespace Final {
                     
                     if (wasRegistered) continue;
                     
-                    AvgVelocityHistory[raceN] =
+                    _AvgVelocityHistory[raceN] =
                         GetInput($"Ingresa la velocidad media del corredor en la carrera {raceN} (1-500): ",
                             new Tuple<float, float>(0, 500));
                     
-                    AvgPos += PositionHistory[raceN];
-                    AvgSpeed += AvgVelocityHistory[raceN];
+                    AvgPos += _PositionHistory[raceN];
+                    AvgSpeed += _AvgVelocityHistory[raceN];
                     
-                    if (PositionHistory[raceN] >= 1 && PositionHistory[raceN] <= 3) Podiums++;
+                    if (_PositionHistory[raceN] >= 1 && _PositionHistory[raceN] <= 3) Podiums++;
 
-                    switch (PositionHistory[raceN]) {
+                    switch (_PositionHistory[raceN]) {
                         case 1: First++; break;
                         case 2: Second++; break;
                         case 3: Third++; break;
                     }
                 }
-                AvgPos /= numberRaces;
-                AvgSpeed /= numberRaces;
+                
+                TotalSalary = CalculateTotalSalary(SalaryPerRace, _PositionHistory);
+                AvgPos = Math.Round(AvgPos/numberRaces, 2);
+                AvgSpeed = Math.Round(AvgSpeed/numberRaces, 2);
+            }
+        }
+        
+        public struct Team {
+            
+            private readonly int _id;
+            public readonly int ID => _id;
+            public readonly string Name;
+            
+            public readonly Runner[] _Runners;
+            public int Runners;
+
+            public double SalaryPerRace;
+            
+            public double TotalSalary;
+
+            public double AvgSpeed;
+            public double AvgPos;
+            public int Podiums;
+            public int First;
+            public int Second;
+            public int Third;
+
+            private void AppendMember(Runner runner) {
+                
+                _Runners[Runners] = runner;
+                Runners += 1;
+                
+                TotalSalary = Math.Round(TotalSalary + runner.TotalSalary, 2);
+                SalaryPerRace = Math.Round(SalaryPerRace + runner.SalaryPerRace, 2);
+                Podiums += runner.Podiums;
+                
+                First += runner.First;
+                Second += runner.Second;
+                Third += runner.Third;
+                
+                AvgSpeed *= Runners-1;
+                AvgSpeed += runner.AvgSpeed;
+                AvgSpeed =  Math.Round(AvgSpeed/Runners, 2);
+                
+                AvgPos *= Runners-1;
+                AvgPos += runner.AvgPos;
+                AvgPos = Math.Round(AvgPos/Runners, 2);
+            }
+
+            public static void HandleTeam(Team[] alreadyRegistered, Runner runner, int numberRunner, int numberOfRunners ) {
+                int pos = FindElementIndex(alreadyRegistered, "Name", runner.Team);
+                if ( pos == -1 ) {
+                    int i;
+                    for (i=0; i< numberOfRunners; i++) {
+                        if (alreadyRegistered[i]._id == 0 ) break;
+                    }
+                    int id = numberRunner > 0 ? alreadyRegistered[i-1]._id + 1 : 1;
+                    alreadyRegistered[i] = new Team(numberOfRunners, runner.Team, id );
+                    alreadyRegistered[i].AppendMember(runner);
+                } else {
+                    alreadyRegistered[pos].AppendMember(runner);
+                }
+
+            }
+            public Team(int numberRunners,  string name, int id) {
+                _id = id;
+                Name = name;
+                
+                Runners = 0;
+                SalaryPerRace =  0;
+                AvgPos = 0;
+                Podiums = 0;
+                First = 0;
+                Second = 0;
+                Third = 0;
+                TotalSalary = 0;
+                
+                AvgSpeed = 0;
+                AvgPos =0;
+                
+                _Runners = new Runner[numberRunners];
+                
             }
         }
 
         private static void InputData(AppState state) {
             for (var i=0; i<state.NumberRunners; i++) {
                 state.Runners[i] = new Runner(state.Runners, i,  state.NumberRaces, state.NumberRunners);
+                Team.HandleTeam(state.Teams, state.Runners[i], i, state.NumberRunners);
             }
         }
         
-        private static void SubMenuResults(Runner[] data)
+        private static void SubMenuResults<T>(T[] data)
         {
             while (true) {
                 string campo;
@@ -153,29 +242,29 @@ namespace Final {
                         
                         if (operadorStr == 3) break;
                         
-                        campo = AskForFieldOrProperty<Runner>(
+                        campo = AskForFieldOrProperty<T>(
                             prompt:"Cuál es el campo por el que deseas ordenar los datos?: ",
-                            except: new []{"PositionHistory", "AvgVelocityHistory", "Name", "Team"}
+                            except: new []{"Name", "Team"}
                         );
                         
                         Operator operador = operadorStr == 1 ? Operator.Biggest : Operator.Smallest;
                     
                         Sort(data, campo, operador);
-                        ShowData(data, except: Unprintable, small: AlwaysSmall);
+                        ShowData(data, small: AlwaysSmall);
                         break;
                     case 2: 
                         
-                        campo = AskForFieldOrProperty<Runner>(
-                            prompt:"Cuál es el campo por el que deseas filtrar los datos?: ", except: Unprintable
+                        campo = AskForFieldOrProperty<T>(
+                            prompt:"Cuál es el campo por el que deseas filtrar los datos?: "
                         );
                         
                         bool strict = GetInput<string>("¿Deseas que la búsqueda sea estricta? [y/n]: ").ToLower() == "y";
 
-                        FilterFieldProperty(data, campo, except: Unprintable,  small: AlwaysSmall, strict: strict);
+                        FilterFieldProperty(data, campo, small: AlwaysSmall, strict: strict);
 
                         break;
                     case 3:
-                        ShowData(data, except: Unprintable, small: AlwaysSmall);
+                        ShowData(data, small: AlwaysSmall);
                         break;
                 }
             }
@@ -185,20 +274,24 @@ namespace Final {
             public int NumberRaces;
             public int NumberRunners;
             public  Runner[] Runners;
+            public  Team[] Teams;
         }
 
         private static void Main() {
 
-            AppState state = new AppState { Runners = null };
+            AppState state = new AppState { Runners = null, Teams =  null};
             
             while (true) {
 
-                var option = AskForOption((1, 3),
+                var option = AskForOption((1, 4),
                     "\nMenu de opciones:\n"+
                     "    1. Entrada de datos\n"+
-                    "    2. Resultados\n" +
-                    "    3. Salir"
+                    "    2. Resultados Corredores\n" +
+                    "    3. Resultados Equipos\n" + 
+                    "    4. Salir"
                 );
+                
+                if (option == 4) break;
 
                 switch (option)
                 {
@@ -208,6 +301,7 @@ namespace Final {
                         state.NumberRunners = GetInput("Ingresa el número de corredores en la competencia (6-26): ",
                             new Tuple<int, int>(6, 26));
                         state.Runners = new Runner[state.NumberRunners];
+                        state.Teams = new Team[state.NumberRunners];
                             
                         InputData(state);
                         break;
@@ -215,10 +309,14 @@ namespace Final {
                         if (state.Runners != null) SubMenuResults(state.Runners);
                         else Console.WriteLine("ERROR: Debes ingresar registros para continuar (en la opción 1)");
                         break;
+                    case 3:
+                        if (state.Teams != null) SubMenuResults(state.Teams);
+                        else Console.WriteLine("ERROR: Debes ingresar registros para continuar (en la opción 1)");
+                        break;
                 }
                 
                 
-                if (option == 3) break;
+                
             }
             
         }
