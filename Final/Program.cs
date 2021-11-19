@@ -3,6 +3,7 @@
 using System;
 using static Final.Utils;
 // ReSharper disable MemberCanBePrivate.Global
+// ReSharper disable InconsistentNaming
 
 
 
@@ -10,7 +11,7 @@ namespace Final {
     internal static class Program {
         
         public static readonly string[] AlwaysSmall = { "AvgSpeed", "AvgPos", "Podiums", "First", "Second", "Third", "Runners"};
-        public struct Runner {
+        public readonly struct Runner {
             
             private readonly int _id;
             public readonly int ID => _id;
@@ -36,12 +37,12 @@ namespace Final {
                 }
             }
             
-            public double AvgSpeed;
-            public double AvgPos;
-            public int Podiums;
-            public int First;
-            public int Second;
-            public int Third;
+            public readonly double AvgSpeed;
+            public readonly double AvgPos;
+            public readonly int Podiums;
+            public readonly int First;
+            public readonly int Second;
+            public readonly int Third;
             
             private int NumberOfMatches(int pos) {
                 int sum = 0;

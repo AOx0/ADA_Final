@@ -206,7 +206,7 @@ namespace Final {
             
             Console.WriteLine(menu);
             do {
-                opcion = GetInput<int>($"Ingresa una opción ({inRange.Item1}-{inRange.Item2}): ", new Tuple<int, int>(inRange.Item1, inRange.Item2));
+                opcion = GetInput($"Ingresa una opción ({inRange.Item1}-{inRange.Item2}): ", new Tuple<int, int>(inRange.Item1, inRange.Item2));
                 if (opcion <= inRange.Item2 && opcion >= inRange.Item1) break;
             } while (true);
 
