@@ -1,6 +1,4 @@
-﻿#undef DEBUG
-
-using System;
+﻿using System;
 using static Final.Utils;
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable InconsistentNaming
@@ -15,6 +13,9 @@ namespace Final {
             
             private readonly int _id;
             public readonly int ID => _id;
+           
+            
+            
             public readonly string Name;
             public readonly string Team;
 
@@ -43,14 +44,6 @@ namespace Final {
             public readonly int First;
             public readonly int Second;
             public readonly int Third;
-            
-            private int NumberOfMatches(int pos) {
-                int sum = 0;
-                foreach (var position in _PositionHistory) {
-                    if (pos == position) sum++;
-                }
-                return sum;
-            }
 
             private static double CalculateTotalSalary(double baseSalary, int[] positionHistory) {
                 double result = baseSalary;
@@ -100,6 +93,7 @@ namespace Final {
                         new Tuple<int, int>(1, numberRunners));
 
                     bool wasRegistered = false;
+                    
                     for (var pilotN=0; pilotN< numRegistered; pilotN++) {
                         if (alreadyRegistered[pilotN]._PositionHistory[raceN] != _PositionHistory[raceN]) continue;
                         Console.WriteLine($"ERROR: Otro corredor ya fue registrado con esa posición en la carrera {raceN}");
@@ -175,15 +169,17 @@ namespace Final {
             }
 
             public static void HandleTeam(Team[] alreadyRegistered, Runner runner, int numberRunner, int numberOfRunners ) {
-                int pos = FindElementIndex(alreadyRegistered, "Name", runner.Team);
+                int i;
+                for (i=0; i< numberOfRunners; i++) {
+                    if (alreadyRegistered[i]._id == 0 ) break;
+                }
+                int id = numberRunner > 0 ? alreadyRegistered[i-1]._id + 1 : 1;
+                
+                int pos = FindElementIndex(alreadyRegistered, "Name", runner.Team, inRange: new (0,id-1 ));
+                
                 if ( pos == -1 ) {
-                    int i;
-                    for (i=0; i< numberOfRunners; i++) {
-                        if (alreadyRegistered[i]._id == 0 ) break;
-                    }
-                    int id = numberRunner > 0 ? alreadyRegistered[i-1]._id + 1 : 1;
-                    alreadyRegistered[i] = new Team(numberOfRunners, runner.Team, id );
-                    alreadyRegistered[i].AppendMember(runner);
+                    alreadyRegistered[id-1] = new Team(numberOfRunners, runner.Team, id );
+                    alreadyRegistered[id-1].AppendMember(runner);
                 } else {
                     alreadyRegistered[pos].AppendMember(runner);
                 }
@@ -247,7 +243,7 @@ namespace Final {
                             prompt:"Cuál es el campo por el que deseas ordenar los datos?: ",
                             except: new []{"Name", "Team"}
                         );
-                        
+
                         Operator operador = operadorStr == 1 ? Operator.Biggest : Operator.Smallest;
                     
                         Sort(data, campo, operador);

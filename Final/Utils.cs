@@ -1,6 +1,3 @@
-#undef DEBUG
-
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -36,6 +33,8 @@ namespace Final {
                     tipo = typeof(T).GetProperty(campo).PropertyType;
                 }
                 
+                
+                
                 var genericMethod = typeof(Utils).GetMethod(nameof(GetInput))?.MakeGenericMethod(tipo);
                 var genericMethod2 = typeof(Utils).GetMethod(nameof(FindAllMatchingElementsIndex))?.MakeGenericMethod(typeof(T), tipo);
 
@@ -43,10 +42,11 @@ namespace Final {
                 dynamic valor = genericMethod.Invoke(typeof(Utils), new []{"¿Qué valor deseas buscar?: ", null});
             
                 indices = (int[])genericMethod2.Invoke(typeof(Utils), new[]{data, campo, valor, null, true} );
+                
                 if (indices.Length == 0) {  Console.WriteLine("ADVERTENCIA: No se encontró ningún dato, intenta buscar de forma no estricta"); return; }
             } else {
                 var valor = GetInput<string>("¿Qué valor deseas buscar?: ");
-                indices = FindAllMatchingElementsIndex(data, campo, valor, null, strict: false );
+                indices = FindAllMatchingElementsIndex(data, campo, valor,  strict: false );
                 if (indices.Length == 0)  { Console.WriteLine("ADVERTENCIA: No se encontró ningún dato"); return;}
                 
             }
@@ -87,6 +87,7 @@ namespace Final {
         /// <returns></returns>
         private static string[] GetAllFieldsAndProperties<T>(string[] except = null) {
             var result = new List<string>();
+
             
             foreach (var field in typeof(T).GetProperties((BindingFlags)(-1) )) { 
                 if (except != null && except.Contains(field.Name) || field.Name.Contains("_")) continue;
@@ -107,19 +108,21 @@ namespace Final {
             Biggest,
             Smallest
         }
-        
+
         public static int FindElementIndex<T, TU>(T[] data, string campo, TU find,  Tuple<int, int> inRange = null ) {
             for (var i= inRange?.Item1 ?? 0; i< (inRange?.Item2 ?? data.Length); i++) {
                 dynamic data1 = GetMemberValue(data[i], campo);
                 dynamic data2 = find;
 
-                if (data1?.GetType() != data2.GetType()) continue;
+                if (data1.GetType() != data2.GetType()) continue;
                 if (data1 == data2 ) return i;
             }
             
             return -1;
         }
 
+
+            
         private static dynamic GetMemberValue<T>(T structInstance, string campo) {
             
             dynamic data;
@@ -137,7 +140,7 @@ namespace Final {
             
         }
         // With help of https://stackoverflow.com/questions/2004508/checking-type-parameter-of-a-generic-method-in-c-sharp
-        public static int[] FindAllMatchingElementsIndex<T, TU>(T[] data, string campo, TU find,  Tuple<int, int> inRange = null, bool strict = true ) {
+        public static int[] FindAllMatchingElementsIndex<T, TU>(T[] data, string campo, TU find, bool strict = true ) {
             var result = new List<int>();
 
             for (int i=0; i<data.Length; i++) {
@@ -164,15 +167,11 @@ namespace Final {
         /// <typeparam name="T">Runner type to read</typeparam>
         /// <returns></returns>
         public static T GetInput<T>(string prompt = "> ", Tuple<T, T> inRange = null) where T : IComparable {
+            var converter = System.ComponentModel.TypeDescriptor.GetConverter(typeof(T));
             while (true) {
                 Console.Write(prompt);
                 try {
-                    var converter = System.ComponentModel.TypeDescriptor.GetConverter(typeof(T));
                     var input = Console.ReadLine();
-                    
-                    #if DEBUG
-                        Console.WriteLine(input);
-                    #endif
 
                     // If the input of the user is empty
                     // an Error is thrown and the function gets to run again
@@ -199,19 +198,8 @@ namespace Final {
         /// <returns></returns>
         /// <exception cref="ArgumentException">Exception thrown when the programmer calls the function with invalid min-max option values</exception>
         public static int AskForOption((int, int) inRange, string menu) {
-            int opcion;
-
-            if (inRange.Item1 < 0)  throw new ArgumentException("Opción minima debe ser mayor a 0");
-            if (inRange.Item1 == inRange.Item2)  throw new ArgumentException("Las opciones deben ser distintas");
-            
             Console.WriteLine(menu);
-            do {
-                opcion = GetInput($"Ingresa una opción ({inRange.Item1}-{inRange.Item2}): ", new Tuple<int, int>(inRange.Item1, inRange.Item2));
-                if (opcion <= inRange.Item2 && opcion >= inRange.Item1) break;
-            } while (true);
-
-            return opcion;
-
+            return  GetInput($"Ingresa una opción ({inRange.Item1}-{inRange.Item2}): ", new Tuple<int, int>(inRange.Item1, inRange.Item2));
         }
 
         private static void ShowHeader<T>(string[] except = null, string[] small = null) {
@@ -241,10 +229,7 @@ namespace Final {
         /// <param name="small"></param>
         /// <param name="showHeader"></param>
         /// <typeparam name="T"></typeparam>
-        public static void ShowData<T>(
-            T[] data, Tuple<int, int> inRange = null,
-            string[] except = null, string[] small = null, 
-            bool showHeader = true
+        public static void ShowData<T>(T[] data, Tuple<int, int> inRange = null, string[] except = null, string[] small = null, bool showHeader = true
         ) {
             
             if (showHeader) ShowHeader<T>(except, small);
@@ -286,6 +271,7 @@ namespace Final {
                     };
 
                     if (!resultado) continue;
+                    
                     
                     (data[i], data[i + 1]) = (data[i + 1], data[i]);
                     
