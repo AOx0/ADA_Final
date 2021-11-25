@@ -146,7 +146,7 @@ namespace Final {
             public int Second;
             public int Third;
 
-            private void AppendMember(Runner runner) {
+            private void RegisterMember(Runner runner) {
                 
                 _Runners[Runners] = runner;
                 Runners += 1;
@@ -168,7 +168,7 @@ namespace Final {
                 AvgPos = Math.Round(AvgPos/Runners, 2);
             }
 
-            public static void HandleTeam(Team[] alreadyRegistered, Runner runner, int numberRunner, int numberOfRunners ) {
+            public static void RegisterRunnerOrCreateTeamAndRegister(Team[] alreadyRegistered, Runner runner, int numberRunner, int numberOfRunners ) {
                 int i;
                 for (i=0; i< numberOfRunners; i++) {
                     if (alreadyRegistered[i]._id == 0 ) break;
@@ -179,9 +179,9 @@ namespace Final {
                 
                 if ( pos == -1 ) {
                     alreadyRegistered[id-1] = new Team(numberOfRunners, runner.Team, id );
-                    alreadyRegistered[id-1].AppendMember(runner);
+                    alreadyRegistered[id-1].RegisterMember(runner);
                 } else {
-                    alreadyRegistered[pos].AppendMember(runner);
+                    alreadyRegistered[pos].RegisterMember(runner);
                 }
 
             }
@@ -209,7 +209,7 @@ namespace Final {
         private static void InputData(AppState state) {
             for (var i=0; i<state.NumberRunners; i++) {
                 state.Runners[i] = new Runner(state.Runners, i,  state.NumberRaces, state.NumberRunners);
-                Team.HandleTeam(state.Teams, state.Runners[i], i, state.NumberRunners);
+                Team.RegisterRunnerOrCreateTeamAndRegister(state.Teams, state.Runners[i], i, state.NumberRunners);
             }
         }
         
@@ -275,7 +275,8 @@ namespace Final {
         }
 
         private static void Main() {
-
+            
+            
             AppState state = new AppState { Runners = null, Teams =  null};
             
             while (true) {

@@ -41,7 +41,7 @@ namespace Final {
                 // ReSharper disable once CoVariantArrayConversion
                 dynamic valor = genericMethod.Invoke(typeof(Utils), new []{"¿Qué valor deseas buscar?: ", null});
             
-                indices = (int[])genericMethod2.Invoke(typeof(Utils), new[]{data, campo, valor, null, true} );
+                indices = (int[])genericMethod2.Invoke(typeof(Utils), new[]{data, campo, valor, true} );
                 
                 if (indices.Length == 0) {  Console.WriteLine("ADVERTENCIA: No se encontró ningún dato, intenta buscar de forma no estricta"); return; }
             } else {
